@@ -29,19 +29,22 @@ def error():
 @app.route('/save', methods = ['POST'])
 def save():
     try:
-        value = request.form['value']
+        val = request.form['value']
         key = base64.urlsafe_b64encode(os.urandom(16))
         instance = StreamCipher(key)
-        print("key: {}".format(key))  
-        encrypted_data = value.encode('ascii')
+        print("key: {}".format(key))
+        print("unencrypted data: {}".format(val))
+        encrypted_data = instance.encrypt(val.encode('ascii'))
         print("encrypted data: {}".format(encrypted_data))
         with sqlite3.connect("streamcipher.db") as con:
             cur = con.cursor()
-            cur.execute('INSERT INTO data(value) VALUES(' + encrypted_data + ')')
+            query = "INSERT INTO data('value') VALUES('" + encrypted_data + "')"
+            print(query)
+            cur.execute(query)
         return redirect('/encryptions')
     except Exception as e:
-        redirect('/error')
         print("Exception. Reason: {}".format(e))
+        return redirect('/error')
 
 @app.route('/encryptions', methods = ['GET'])
 def fetch():
