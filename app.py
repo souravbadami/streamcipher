@@ -57,8 +57,8 @@ def fetch():
                 print(val)
         return app.send_static_file('values.html')
     except Exception as e:
-        redirect('/error')
         print("Exception. Reason: {}".format(e))   
+        return redirect('/error')
 
 if __name__ == '__main__':
     # app_theft_checker_2()
