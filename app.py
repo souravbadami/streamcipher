@@ -10,7 +10,7 @@ app = Flask(__name__)
 def initialize():
     try:
         conn = sqlite3.connect('streamcipher.db')
-        conn.execute('CREATE TABLE data (value TEXT)')
+        conn.execute('CREATE TABLE data (nonce TEXT, ctext TEXT, key TEXT)')
         conn.close()
         print("Database initialized!")
         return redirect('/')
@@ -35,10 +35,12 @@ def save():
         print("key: {}".format(key))
         print("unencrypted data: {}".format(val))
         encrypted_data = instance.encrypt(val.encode('ascii'))
+        decrypted_data = instance.decrypt(encrypted_data)
         print("encrypted data: {}".format(encrypted_data))
+        print("decrypted data: {}".format(decrypted_data))
         with sqlite3.connect("streamcipher.db") as con:
             cur = con.cursor()
-            query = "INSERT INTO data('value') VALUES('" + encrypted_data + "')"
+            query = "INSERT INTO data('nonce', 'ctext', 'key') VALUES('" + base64.urlsafe_b64encode(encrypted_data[0]) + "','" + base64.urlsafe_b64encode(encrypted_data[1].encode('latin-1')) + "','" + base64.urlsafe_b64encode(key) + "')"
             print(query)
             cur.execute(query)
         return redirect('/encryptions')
@@ -51,13 +53,20 @@ def fetch():
     try:
         with sqlite3.connect("streamcipher.db") as con:
             cur = con.cursor()
-            values = cur.execute('SELECT value FROM data')
+            values = cur.execute('SELECT nonce, ctext, key FROM data')
             print("Encrypted values: ")
             for val in values:
                 print(val)
+                instance = StreamCipher(base64.urlsafe_b64decode(val[2].encode('utf-8')))
+                tup = list()
+                tup.append(base64.urlsafe_b64decode(val[0].encode('utf-8')))
+                tup.append(base64.urlsafe_b64decode(val[1].encode('utf-8')))
+                decrypted_data = instance.decrypt(tup)
+                print("Decrypted data: ")
+                print(decrypted_data)
         return app.send_static_file('values.html')
     except Exception as e:
-        print("Exception. Reason: {}".format(e))   
+        print("Exception in //encryptions. Reason: {}".format(e))   
         return redirect('/error')
 
 if __name__ == '__main__':
