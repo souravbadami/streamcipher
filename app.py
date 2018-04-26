@@ -4,13 +4,13 @@ import os
 from StreamCipher import StreamCipher
 import sqlite3
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='static')
 
 @app.route('/initialize', methods = ['GET'])
 def initialize():
     try:
         conn = sqlite3.connect('streamcipher.db')
-        conn.execute('CREATE TABLE data (nonce TEXT, ctext TEXT, key TEXT)')
+        conn.execute('CREATE TABLE data (id INTEGER PRIMARY KEY, nonce TEXT, ctext TEXT, key TEXT)')
         conn.close()
         print("Database initialized!")
         return redirect('/')
@@ -50,11 +50,37 @@ def save():
 
 @app.route('/encryptions', methods = ['GET'])
 def fetch():
+    with sqlite3.connect("streamcipher.db") as con:
+        cur = con.cursor()
+        values = cur.execute('SELECT nonce, ctext, key, id FROM data')
+        print("Encrypted values: ")
+        dv = list()
+        for val in values:
+            print(val)
+            temp = dict()
+            instance = StreamCipher(base64.urlsafe_b64decode(val[2].encode('utf-8')))
+            tup = list()
+            tup.append(base64.urlsafe_b64decode(val[0].encode('utf-8')))
+            tup.append(base64.urlsafe_b64decode(val[1].encode('utf-8')))
+            decrypted_data = instance.decrypt(tup)
+            temp['nonce'] = val[0]
+            temp['ctext'] = val[1]
+            temp['id'] = val[3]
+            dv.append(temp)
+            print("Decrypted data: ")
+            print(decrypted_data)
+    print("Final values to send: ")
+    print(dv)
+    return render_template('values.html', summary=dv)
+
+@app.route('/decrypt', methods = ['GET'])
+def decrypt_with_id():
     try:
         with sqlite3.connect("streamcipher.db") as con:
             cur = con.cursor()
-            values = cur.execute('SELECT nonce, ctext, key FROM data')
+            values = cur.execute('SELECT nonce, ctext, key, id FROM data WHERE id = ' + request.args.get('id'))
             print("Encrypted values: ")
+            dv = dict()
             for val in values:
                 print(val)
                 instance = StreamCipher(base64.urlsafe_b64decode(val[2].encode('utf-8')))
@@ -64,11 +90,13 @@ def fetch():
                 decrypted_data = instance.decrypt(tup)
                 print("Decrypted data: ")
                 print(decrypted_data)
-        return app.send_static_file('values.html')
+                dv['nonce'] = val[0]
+                dv['ctext'] = val[1]
+                dv['val'] = decrypted_data
+        return render_template('decrypted.html', summary=dv)
     except Exception as e:
         print("Exception in //encryptions. Reason: {}".format(e))   
         return redirect('/error')
 
 if __name__ == '__main__':
-    # app_theft_checker_2()
     app.run(debug=True, host='127.0.0.1',port=8080,use_reloader=True)

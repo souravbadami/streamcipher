@@ -2,8 +2,13 @@
 <html>
 <head>
   <title>StreamCipher Demonstration</title>
+  <!-- <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script> -->
+  <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
   <link rel="stylesheet" type="text/css" href="static/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="static/style.css">
+  <script type="text/javascript" src="static/app.js"></script>
+  <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css">
+  <script type="text/javascript" src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -34,6 +39,25 @@
       <div class="jumbotron">
         <h2>Encryptions:</h2>
       </div>
+
+      <table id="myTable" class="display">
+        <thead>
+            <tr>
+                <th>nonce</th>
+                <th>cipher text</th>
+                <th>option</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in summary %}
+              <tr>
+                <td>{{ item.nonce }}</td>
+                <td>{{ item.ctext }}</td>
+                <td><a href="/decrypt?id={{ item.id }}">view</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+      </table>
 
     </div> <!-- /container -->
 </body>
